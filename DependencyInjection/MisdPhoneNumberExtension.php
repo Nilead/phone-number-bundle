@@ -1,5 +1,4 @@
 <?php
-
 /*
  * This file is part of the Symfony2 PhoneNumberBundle.
  *
@@ -8,20 +7,17 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-
 namespace Misd\PhoneNumberBundle\DependencyInjection;
-
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
+use Symfony\Component\DependencyInjection\Extension\PrependExtensionInterface;
 use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
-
-
 /**
  * Bundle extension.
  */
-class MisdPhoneNumberExtension extends Extension
+class MisdPhoneNumberExtension extends Extension implements PrependExtensionInterface
 {
     /**
      * {@inheritdoc}
@@ -30,14 +26,28 @@ class MisdPhoneNumberExtension extends Extension
     {
         $loader = new XmlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
         $loader->load('services.xml');
-
         $this->setFactory($container->getDefinition('libphonenumber.phone_number_util'));
         $this->setFactory($container->getDefinition('libphonenumber.phone_number_offline_geocoder'));
         $this->setFactory($container->getDefinition('libphonenumber.short_number_info'));
         $this->setFactory($container->getDefinition('libphonenumber.phone_number_to_carrier_mapper'));
         $this->setFactory($container->getDefinition('libphonenumber.phone_number_to_time_zones_mapper'));
     }
-
+    /**
+     * @param ContainerBuilder $container
+     */
+    public function prepend(ContainerBuilder $container)
+    {
+        $container->prependExtensionConfig('doctrine', array(
+            'dbal' => array(
+                'types' => array(
+                    'phone_number' => array(
+                        'class' => 'Misd\PhoneNumberBundle\Doctrine\DBAL\Types\PhoneNumberType',
+                        'commented' => false
+                    )
+                )
+            )
+        ));
+    }
     /**
      * Set Factory of FactoryClass & FactoryMethod based on Symfony version.
      *
